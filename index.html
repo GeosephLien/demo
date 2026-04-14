@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Partner Host</title>
+  <style>
+    :root {
+      color-scheme: light;
+      font-family: Roboto, "Segoe UI", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(180deg, #f7f8fc 0%, #e8edf8 100%);
+    }
+
+    .open-ac2-button {
+      appearance: none;
+      border: 0;
+      border-radius: 999px;
+      padding: 0.95rem 1.5rem;
+      font: inherit;
+      font-size: 1rem;
+      font-weight: 700;
+      color: #fff;
+      background: linear-gradient(135deg, #1f4dff 0%, #5f6fff 100%);
+      box-shadow: 0 18px 40px rgba(31, 77, 255, 0.24);
+      cursor: pointer;
+    }
+
+    .open-ac2-button:hover {
+      filter: brightness(1.05);
+    }
+
+    .open-ac2-button:focus-visible {
+      outline: 3px solid rgba(31, 77, 255, 0.28);
+      outline-offset: 4px;
+    }
+
+    .ac2-modal[hidden] {
+      display: none;
+    }
+
+    .ac2-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+    }
+
+    .ac2-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(5, 8, 20, 0.56);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+
+    .ac2-panel {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: min(1280px, calc(100vw - 32px));
+      height: min(780px, calc(100vh - 32px));
+      transform: translate(-50%, -50%);
+      border-radius: 28px;
+      overflow: hidden;
+      background: #050814;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      box-shadow: 0 36px 80px rgba(3, 8, 22, 0.45);
+    }
+
+    .ac2-frame {
+      width: 100%;
+      height: 100%;
+      border: 0;
+      display: block;
+      background: #050814;
+    }
+
+    @media (max-width: 960px) {
+      .ac2-panel {
+        width: 100vw;
+        height: calc(100vh - 32px);
+        top: 16px;
+        left: 0;
+        transform: none;
+        border-radius: 22px 22px 0 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <button id="open-ac2-button" class="open-ac2-button" type="button">Open AC2</button>
+
+  <div id="ac2-modal" class="ac2-modal" hidden aria-hidden="true">
+    <div class="ac2-backdrop" data-ac2-close></div>
+    <section class="ac2-panel" role="dialog" aria-modal="true" aria-label="Avatar Creator 2">
+      <iframe
+        id="ac2-frame"
+        class="ac2-frame"
+        title="Avatar Creator 2"
+        allow="clipboard-write"
+        referrerpolicy="strict-origin-when-cross-origin"
+      ></iframe>
+    </section>
+  </div>
+
+  <script>
+    (() => {
+      const AC2_ORIGIN = 'https://geosephlien.github.io';
+      const AC2_URL = 'https://geosephlien.github.io/ac2/?embedded=1&uiMode=modal';
+      const AC2_API_BASE = 'https://ac2-host-api-avatar-page.kuanyi-lien.workers.dev';
+      const AC2_TENANT_ID = 'viverse';
+      const AC2_USER_ID = 'user-001';
+      const DEFAULT_FRAME_STYLE = {
+        source: 'partner-host',
+        placement: 'center',
+        breakpoint: 960,
+        panelWidth: 1280,
+        panelHeight: 780,
+        panelRadius: 28,
+        mobilePanelWidth: null,
+        mobilePanelHeight: 780,
+        mobilePanelRadius: 22,
+        padding: {
+          top: 32,
+          right: 32,
+          bottom: 32,
+          left: 32
+        },
+        mobilePadding: {
+          top: 16,
+          right: 0,
+          bottom: 16,
+          left: 0
+        },
+        backdrop: 'rgba(4, 7, 20, 0.58)',
+        backdropFilter: 'blur(12px)',
+        panelBackground: 'rgba(11, 14, 40, 0.96)',
+        frameBackground: '#050814',
+        border: '1px solid rgba(255, 255, 255, 0.18)'
+      };
+
+      const openButton = document.getElementById('open-ac2-button');
+      const modal = document.getElementById('ac2-modal');
+      const frame = document.getElementById('ac2-frame');
+
+      let ac2Ready = false;
+      let launchPending = false;
+      let ac2RequestId = null;
+      let ac2SessionPayload = null;
+
+      function openModal() {
+        modal.hidden = false;
+        modal.setAttribute('aria-hidden', 'false');
+      }
+
+      function closeModal(options) {
+        const reset = !options || options.reset !== false;
+        modal.hidden = true;
+        modal.setAttribute('aria-hidden', 'true');
+        launchPending = false;
+        ac2Ready = false;
+        ac2RequestId = null;
+        if (reset) {
+          frame.removeAttribute('src');
+        }
+      }
+
+      async function requestSession() {
+        const response = await fetch(AC2_API_BASE + '/api/ac2/session', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            tenantId: AC2_TENANT_ID,
+            userId: AC2_USER_ID
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to create AC2 session (' + response.status + ')');
+        }
+
+        return response.json();
+      }
+
+      function buildInitPayload(session) {
+        return Object.assign({}, session, {
+          apiBase: AC2_API_BASE,
+          uiMode: 'modal',
+          locale: document.documentElement.lang || 'en',
+          autoStart: false,
+          frameStyle: DEFAULT_FRAME_STYLE
+        });
+      }
+
+      function sendInit() {
+        if (!ac2Ready || !ac2SessionPayload || !frame.contentWindow) {
+          return;
+        }
+
+        frame.contentWindow.postMessage({
+          type: 'ac2:init',
+          requestId: ac2RequestId,
+          payload: ac2SessionPayload
+        }, AC2_ORIGIN);
+      }
+
+      async function launchAc2() {
+        openButton.disabled = true;
+
+        try {
+          ac2RequestId = 'partner-host-' + Date.now();
+          const session = await requestSession();
+          ac2SessionPayload = buildInitPayload(session);
+          launchPending = true;
+          openModal();
+          if (frame.src !== AC2_URL) {
+            frame.src = AC2_URL;
+          } else if (ac2Ready) {
+            sendInit();
+          }
+        } finally {
+          openButton.disabled = false;
+        }
+      }
+
+      openButton.addEventListener('click', () => {
+        launchAc2().catch((error) => {
+          console.error(error);
+          window.alert(error && error.message ? error.message : 'Unable to open AC2.');
+          closeModal();
+        });
+      });
+
+      modal.addEventListener('click', (event) => {
+        if (event.target instanceof Element && event.target.hasAttribute('data-ac2-close')) {
+          closeModal();
+        }
+      });
+
+      window.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && !modal.hidden) {
+          closeModal();
+        }
+      });
+
+      window.addEventListener('message', (event) => {
+        if (event.origin !== AC2_ORIGIN) {
+          return;
+        }
+
+        const message = event.data || {};
+        if (!message.type) {
+          return;
+        }
+
+        if (message.type === 'ac2:ready') {
+          ac2Ready = true;
+          if (launchPending) {
+            sendInit();
+          }
+          return;
+        }
+
+        if (message.type === 'ac2:init-ack') {
+          launchPending = false;
+          return;
+        }
+
+        if (message.type === 'ac2:close-request') {
+          closeModal({ reset: false });
+          return;
+        }
+
+        if (message.type === 'ac2:error' || message.type === 'ac2:blocked') {
+          console.error('AC2 host event:', message.payload || {});
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
