@@ -576,6 +576,7 @@
     async function loadHostAvatar(url, meta = {}) {
       const loadId = ++avatarLoadSequence;
       setAvatarText('Loading ' + (meta.displayName || meta.key || 'avatar') + '...');
+      const hadAvatarBeforeLoad = Boolean(currentVrm);
 
       const gltf = await loader.loadAsync(url);
       if (loadId !== avatarLoadSequence) {
@@ -596,7 +597,9 @@
       avatarVisualRoot.add(vrm.scene);
       vrm.scene.position.set(0, 0, 0);
       vrm.scene.rotation.set(0, Math.PI, 0);
-      avatarAnchor.position.set(0, 0, 0);
+      if (!hadAvatarBeforeLoad) {
+        avatarAnchor.position.set(0, 0, 0);
+      }
 
       activeAvatarKey = meta.key || '';
       setAvatarText(meta.displayName || meta.key || 'Avatar loaded');
