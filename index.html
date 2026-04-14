@@ -719,7 +719,7 @@
 
       moveDirection.normalize();
       avatarAnchor.position.addScaledVector(moveDirection, delta * 2.4);
-      avatarVisualRoot.rotation.y = Math.atan2(moveDirection.x, moveDirection.z) + Math.PI;
+      avatarVisualRoot.rotation.y = Math.atan2(moveDirection.x, moveDirection.z);
     }
 
     function updateCamera(delta) {
