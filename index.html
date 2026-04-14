@@ -777,7 +777,7 @@
       pointerState.lastY = event.clientY;
 
       cameraState.yaw -= deltaX * 0.006;
-      cameraState.pitch = THREE.MathUtils.clamp(cameraState.pitch - deltaY * 0.0045, -0.15, 0.75);
+      cameraState.pitch = THREE.MathUtils.clamp(cameraState.pitch + deltaY * 0.0045, -0.15, 0.75);
     });
 
     function releasePointer(event) {
