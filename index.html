@@ -509,6 +509,37 @@
       return response.json();
     }
 
+    async function fetchActiveAvatar() {
+      const session = await ensureSession();
+      const response = await fetch(AC2_API_BASE + '/api/ac2/active-avatar', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          Authorization: 'Bearer ' + session.sessionToken
+        }
+      });
+
+      if (!response.ok) {
+        return null;
+      }
+
+      const data = await response.json();
+      return data.key || null;
+    }
+
+    async function saveActiveAvatar(key) {
+      const session = await ensureSession();
+      await fetch(AC2_API_BASE + '/api/ac2/active-avatar', {
+        method: 'PUT',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: 'Bearer ' + session.sessionToken
+        },
+        body: JSON.stringify({ key })
+      });
+    }
+
     function openModal() {
       modal.hidden = false;
       modal.setAttribute('aria-hidden', 'false');
@@ -670,6 +701,10 @@
         key: nextKey,
         displayName: nextName
       });
+
+      if (nextKey) {
+        saveActiveAvatar(nextKey).catch(() => {});
+      }
     }
 
     async function loadInitialAvatarFromStorage() {
@@ -680,13 +715,26 @@
         return;
       }
 
-      files.sort((left, right) => {
-        return new Date(right.uploadedAt || 0).getTime() - new Date(left.uploadedAt || 0).getTime();
-      });
+      // Prefer the last active avatar; fall back to most recently uploaded
+      let targetKey = null;
+      try {
+        targetKey = await fetchActiveAvatar();
+      } catch (error) {
+        console.warn('Could not fetch active avatar:', error);
+      }
+
+      if (!targetKey || !files.some((f) => f.key === targetKey)) {
+        files.sort((left, right) => {
+          return new Date(right.uploadedAt || 0).getTime() - new Date(left.uploadedAt || 0).getTime();
+        });
+        targetKey = files[0].key;
+      }
+
+      const targetFile = files.find((f) => f.key === targetKey) || files[0];
 
       await syncSelectedAvatar({
-        key: files[0].key,
-        fileName: files[0].fileName,
+        key: targetFile.key,
+        fileName: targetFile.fileName,
         source: 'remote'
       });
     }
