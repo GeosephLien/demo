@@ -229,8 +229,7 @@
       "imports": {
         "three": "https://unpkg.com/three@0.160.1/build/three.module.js",
         "three/addons/": "https://unpkg.com/three@0.160.1/examples/jsm/",
-        "@pixiv/three-vrm": "https://esm.sh/@pixiv/three-vrm@2.1.2?bundle&external=three",
-        "@pixiv/three-vrm-animation": "https://esm.sh/@pixiv/three-vrm-animation@2.1.2?bundle&external=three,@pixiv/three-vrm"
+        "@pixiv/three-vrm": "https://esm.sh/@pixiv/three-vrm@2.1.2?bundle&external=three"
       }
     }
   </script>
@@ -278,10 +277,6 @@
     import * as THREE from 'three';
     import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
     import { VRMLoaderPlugin, VRMUtils } from '@pixiv/three-vrm';
-    import {
-      VRMAnimationLoaderPlugin,
-      createVRMAnimationClip
-    } from '@pixiv/three-vrm-animation';
 
     const AC2_ORIGIN = 'https://geosephlien.github.io';
     const AC2_URL = 'https://geosephlien.github.io/ac2/?embedded=1&uiMode=modal';
@@ -290,9 +285,6 @@
     const AC2_USER_ID = 'user-001';
     const AC2_CLIENT_ID = 'partner-threejs';
     const AC2_SOURCE = 'partner-threejs';
-    const IDLE_VRMA_URL = './vrmas/ani_Idle_Stand_Female.vrma';
-    const WALK_VRMA_URL = './vrmas/Walk.vrma';
-    const ANIMATION_BLEND_SECONDS = 0.2;
     const DEFAULT_FRAME_STYLE = {
       source: 'partner-host',
       placement: 'center',
@@ -344,7 +336,6 @@
     const loader = new GLTFLoader();
     loader.crossOrigin = 'anonymous';
     loader.register((parser) => new VRMLoaderPlugin(parser));
-    loader.register((parser) => new VRMAnimationLoaderPlugin(parser));
 
     const avatarAnchor = new THREE.Group();
     const avatarVisualRoot = new THREE.Group();
@@ -407,10 +398,6 @@
     let sessionRequestPromise = null;
     let activeAvatarKey = '';
     let avatarLoadSequence = 0;
-    let animationMixer = null;
-    let idleAction = null;
-    let walkAction = null;
-    let currentAction = null;
 
     function setSessionText(value) {
       sessionStatus.textContent = value;
@@ -567,72 +554,9 @@
         return;
       }
 
-      disposeAnimationState();
       avatarVisualRoot.remove(currentVrm.scene);
       VRMUtils.deepDispose(currentVrm.scene);
       currentVrm = null;
-    }
-
-    function disposeAnimationState() {
-      if (animationMixer) {
-        animationMixer.stopAllAction();
-      }
-
-      animationMixer = null;
-      idleAction = null;
-      walkAction = null;
-      currentAction = null;
-    }
-
-    function playAvatarAction(nextAction) {
-      if (!nextAction || currentAction === nextAction) {
-        return;
-      }
-
-      nextAction.reset().setEffectiveTimeScale(1).setEffectiveWeight(1).play();
-      if (currentAction) {
-        currentAction.crossFadeTo(nextAction, ANIMATION_BLEND_SECONDS, false);
-      }
-
-      currentAction = nextAction;
-    }
-
-    function updateAvatarAnimationState(isMoving) {
-      const nextAction = isMoving ? (walkAction || idleAction) : (idleAction || walkAction);
-      playAvatarAction(nextAction);
-    }
-
-    async function loadVrmAnimationClip(url, vrm) {
-      const animationGltf = await loader.loadAsync(url);
-      const vrmAnimation = animationGltf.userData.vrmAnimations?.[0];
-      if (!vrmAnimation) {
-        return null;
-      }
-
-      return createVRMAnimationClip(vrmAnimation, vrm);
-    }
-
-    async function setupAvatarAnimations(vrm, loadId) {
-      const mixer = new THREE.AnimationMixer(vrm.scene);
-      const [idleClip, walkClip] = await Promise.all([
-        loadVrmAnimationClip(IDLE_VRMA_URL, vrm),
-        loadVrmAnimationClip(WALK_VRMA_URL, vrm)
-      ]);
-
-      if (loadId !== avatarLoadSequence || vrm !== currentVrm) {
-        mixer.stopAllAction();
-        return;
-      }
-
-      animationMixer = mixer;
-      if (idleClip) {
-        idleAction = mixer.clipAction(idleClip);
-      }
-      if (walkClip) {
-        walkAction = mixer.clipAction(walkClip);
-      }
-
-      playAvatarAction(idleAction || walkAction);
     }
 
     async function loadHostAvatar(url, meta = {}) {
@@ -660,8 +584,15 @@
       vrm.scene.rotation.set(0, Math.PI, 0);
       avatarAnchor.position.set(0, 0, 0);
 
-      disposeAnimationState();
-      await setupAvatarAnimations(vrm, loadId);
+      // XYZ axis markers: Red=X, Green=Y, Blue=Z
+      const rootAxes = new THREE.AxesHelper(0.5);
+      vrm.scene.add(rootAxes);
+
+      const hipNode = vrm.humanoid.getNormalizedBoneNode('hips');
+      if (hipNode) {
+        const hipAxes = new THREE.AxesHelper(0.3);
+        hipNode.add(hipAxes);
+      }
 
       activeAvatarKey = meta.key || '';
       setAvatarText(meta.displayName || meta.key || 'Avatar loaded');
@@ -714,7 +645,7 @@
       const horizontal = (keyState.KeyD ? 1 : 0) - (keyState.KeyA ? 1 : 0);
       const vertical = (keyState.KeyW ? 1 : 0) - (keyState.KeyS ? 1 : 0);
       if (!horizontal && !vertical) {
-        return false;
+        return;
       }
 
       const moveDirection = new THREE.Vector3();
@@ -725,13 +656,12 @@
       moveDirection.addScaledVector(right, horizontal);
 
       if (moveDirection.lengthSq() === 0) {
-        return false;
+        return;
       }
 
       moveDirection.normalize();
       avatarAnchor.position.addScaledVector(moveDirection, delta * 2.4);
       avatarVisualRoot.rotation.y = Math.atan2(moveDirection.x, moveDirection.z) + Math.PI;
-      return true;
     }
 
     function updateCamera(delta) {
@@ -755,11 +685,7 @@
 
     function animate() {
       const delta = Math.min(clock.getDelta(), 0.05);
-      const isMoving = updateMovement(delta);
-      updateAvatarAnimationState(isMoving);
-      if (animationMixer) {
-        animationMixer.update(delta);
-      }
+      updateMovement(delta);
       if (currentVrm) {
         currentVrm.update(delta);
       }
