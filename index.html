@@ -598,16 +598,6 @@
       vrm.scene.rotation.set(0, Math.PI, 0);
       avatarAnchor.position.set(0, 0, 0);
 
-      // XYZ axis markers: Red=X, Green=Y, Blue=Z
-      const rootAxes = new THREE.AxesHelper(0.5);
-      vrm.scene.add(rootAxes);
-
-      const hipNode = vrm.humanoid.getNormalizedBoneNode('hips');
-      if (hipNode) {
-        const hipAxes = new THREE.AxesHelper(0.3);
-        hipNode.add(hipAxes);
-      }
-
       activeAvatarKey = meta.key || '';
       setAvatarText(meta.displayName || meta.key || 'Avatar loaded');
 
