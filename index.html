@@ -3,10 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Partner Host</title>
+  <title>Partner VRM Host</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
   <style>
     :root {
-      color-scheme: light;
+      color-scheme: dark;
       font-family: Roboto, "Segoe UI", sans-serif;
     }
 
@@ -14,35 +17,148 @@
       box-sizing: border-box;
     }
 
+    html,
     body {
       margin: 0;
-      min-height: 100vh;
+      width: 100%;
+      min-height: 100%;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at top right, rgba(94, 80, 242, 0.38), transparent 34%),
+        linear-gradient(180deg, #091123 0%, #060913 100%);
+    }
+
+    body {
+      color: #f6f8ff;
+    }
+
+    .app-shell {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+    }
+
+    .scene-canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      cursor: grab;
+    }
+
+    .scene-canvas.is-dragging {
+      cursor: grabbing;
+    }
+
+    .overlay-panel {
+      position: fixed;
+      top: 24px;
+      left: 24px;
+      z-index: 10;
+      width: min(420px, calc(100vw - 48px));
+      padding: 18px 18px 16px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 22px;
+      background: rgba(10, 15, 28, 0.74);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      box-shadow: 0 24px 64px rgba(2, 6, 18, 0.42);
+    }
+
+    .overlay-title {
+      margin: 0;
+      font-size: 1.1rem;
+      font-weight: 800;
+      letter-spacing: 0.01em;
+    }
+
+    .overlay-copy {
+      margin: 0.4rem 0 0;
+      color: rgba(232, 238, 255, 0.74);
+      font-size: 0.92rem;
+      line-height: 1.5;
+    }
+
+    .status-grid {
       display: grid;
-      place-items: center;
-      background: linear-gradient(180deg, #f7f8fc 0%, #e8edf8 100%);
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .status-card {
+      padding: 12px 14px;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .status-label {
+      display: block;
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: rgba(214, 222, 255, 0.58);
+    }
+
+    .status-value {
+      display: block;
+      margin-top: 0.35rem;
+      font-size: 0.94rem;
+      font-weight: 600;
+      color: #f9fbff;
+      word-break: break-word;
+    }
+
+    .controls-copy {
+      margin: 14px 0 0;
+      color: rgba(232, 238, 255, 0.78);
+      font-size: 0.84rem;
+      line-height: 1.55;
     }
 
     .open-ac2-button {
       appearance: none;
+      margin-top: 16px;
       border: 0;
       border-radius: 999px;
-      padding: 0.95rem 1.5rem;
+      padding: 0.95rem 1.45rem;
       font: inherit;
-      font-size: 1rem;
-      font-weight: 700;
+      font-size: 0.98rem;
+      font-weight: 800;
       color: #fff;
-      background: linear-gradient(135deg, #1f4dff 0%, #5f6fff 100%);
-      box-shadow: 0 18px 40px rgba(31, 77, 255, 0.24);
+      background: linear-gradient(135deg, #2764ff 0%, #675bff 58%, #9165ff 100%);
+      box-shadow: 0 18px 40px rgba(39, 100, 255, 0.26);
       cursor: pointer;
     }
 
     .open-ac2-button:hover {
-      filter: brightness(1.05);
+      filter: brightness(1.06);
     }
 
     .open-ac2-button:focus-visible {
-      outline: 3px solid rgba(31, 77, 255, 0.28);
+      outline: 3px solid rgba(70, 113, 255, 0.3);
       outline-offset: 4px;
+    }
+
+    .open-ac2-button:disabled {
+      cursor: wait;
+      filter: saturate(0.82);
+      opacity: 0.82;
+    }
+
+    .scene-help {
+      position: fixed;
+      right: 24px;
+      bottom: 24px;
+      z-index: 10;
+      padding: 12px 14px;
+      border-radius: 16px;
+      background: rgba(10, 15, 28, 0.64);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: rgba(236, 241, 255, 0.84);
+      font-size: 0.82rem;
+      line-height: 1.5;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
     }
 
     .ac2-modal[hidden] {
@@ -86,19 +202,63 @@
     }
 
     @media (max-width: 960px) {
+      .overlay-panel {
+        top: 16px;
+        left: 16px;
+        width: calc(100vw - 32px);
+      }
+
+      .scene-help {
+        right: 16px;
+        bottom: 16px;
+        max-width: calc(100vw - 32px);
+      }
+
       .ac2-panel {
         width: 100vw;
-        height: calc(100vh - 32px);
-        top: 16px;
+        height: calc(100vh - 24px);
+        top: 24px;
         left: 0;
         transform: none;
         border-radius: 22px 22px 0 0;
       }
     }
   </style>
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.160.1/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.160.1/examples/jsm/",
+        "@pixiv/three-vrm": "https://esm.sh/@pixiv/three-vrm@2.1.2?bundle&external=three"
+      }
+    }
+  </script>
 </head>
 <body>
-  <button id="open-ac2-button" class="open-ac2-button" type="button">Open AC2</button>
+  <div class="app-shell">
+    <canvas id="host-scene" class="scene-canvas" aria-label="Partner VRM scene"></canvas>
+
+    <section class="overlay-panel" aria-label="Partner host controls">
+      <h1 class="overlay-title">Partner VRM Host</h1>
+      <p class="overlay-copy">This page owns the AC2 session, opens AC2 on demand, and swaps the host scene avatar when AC2 selects a different VRM.</p>
+
+      <div class="status-grid">
+        <div class="status-card">
+          <span class="status-label">Session</span>
+          <span id="session-status" class="status-value">Initializing AC2 session...</span>
+        </div>
+        <div class="status-card">
+          <span class="status-label">Active Avatar</span>
+          <span id="avatar-status" class="status-value">Waiting for avatar from storage...</span>
+        </div>
+      </div>
+
+      <button id="open-ac2-button" class="open-ac2-button" type="button">Open AC2</button>
+      <p class="controls-copy">Drag on the scene to orbit the camera. Use <code>W</code> <code>A</code> <code>S</code> <code>D</code> to move the avatar inside the host scene.</p>
+    </section>
+
+    <div class="scene-help">AC2 selection sync: when a VRM is selected in AC2 viewer, this host requests its signed URL and replaces the current avatar.</div>
+  </div>
 
   <div id="ac2-modal" class="ac2-modal" hidden aria-hidden="true">
     <div class="ac2-backdrop" data-ac2-close></div>
@@ -113,181 +273,567 @@
     </section>
   </div>
 
-  <script>
-    (() => {
-      const AC2_ORIGIN = 'https://geosephlien.github.io';
-      const AC2_URL = 'https://geosephlien.github.io/ac2/?embedded=1&uiMode=modal';
-      const AC2_API_BASE = 'https://ac2-host-api-avatar-page.kuanyi-lien.workers.dev';
-      const AC2_TENANT_ID = 'viverse';
-      const AC2_USER_ID = 'user-001';
-      const DEFAULT_FRAME_STYLE = {
-        source: 'partner-host',
-        placement: 'center',
-        breakpoint: 960,
-        panelWidth: 1280,
-        panelHeight: 780,
-        panelRadius: 28,
-        mobilePanelWidth: null,
-        mobilePanelHeight: 780,
-        mobilePanelRadius: 22,
-        padding: {
-          top: 32,
-          right: 32,
-          bottom: 32,
-          left: 32
+  <script type="module">
+    import * as THREE from 'three';
+    import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+    import { VRMLoaderPlugin, VRMUtils } from '@pixiv/three-vrm';
+
+    const AC2_ORIGIN = 'https://geosephlien.github.io';
+    const AC2_URL = 'https://geosephlien.github.io/ac2/?embedded=1&uiMode=modal';
+    const AC2_API_BASE = 'https://ac2-host-api-avatar-page.kuanyi-lien.workers.dev';
+    const AC2_TENANT_ID = 'viverse';
+    const AC2_USER_ID = 'user-001';
+    const AC2_CLIENT_ID = 'partner-threejs';
+    const AC2_SOURCE = 'partner-threejs';
+    const DEFAULT_FRAME_STYLE = {
+      source: 'partner-host',
+      placement: 'center',
+      breakpoint: 960,
+      panelWidth: 1280,
+      panelHeight: 780,
+      panelRadius: 28,
+      mobilePanelWidth: null,
+      mobilePanelHeight: 780,
+      mobilePanelRadius: 22,
+      padding: {
+        top: 32,
+        right: 32,
+        bottom: 32,
+        left: 32
+      },
+      mobilePadding: {
+        top: 16,
+        right: 0,
+        bottom: 16,
+        left: 0
+      },
+      backdrop: 'rgba(4, 7, 20, 0.58)',
+      backdropFilter: 'blur(12px)',
+      panelBackground: 'rgba(11, 14, 40, 0.96)',
+      frameBackground: '#050814',
+      border: '1px solid rgba(255, 255, 255, 0.18)'
+    };
+
+    const sceneCanvas = document.getElementById('host-scene');
+    const sessionStatus = document.getElementById('session-status');
+    const avatarStatus = document.getElementById('avatar-status');
+    const openButton = document.getElementById('open-ac2-button');
+    const modal = document.getElementById('ac2-modal');
+    const frame = document.getElementById('ac2-frame');
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 100);
+    const renderer = new THREE.WebGLRenderer({
+      canvas: sceneCanvas,
+      antialias: true,
+      alpha: true
+    });
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.75));
+    renderer.setSize(window.innerWidth, window.innerHeight, false);
+
+    const clock = new THREE.Clock();
+    const loader = new GLTFLoader();
+    loader.crossOrigin = 'anonymous';
+    loader.register((parser) => new VRMLoaderPlugin(parser));
+
+    const avatarAnchor = new THREE.Group();
+    const avatarVisualRoot = new THREE.Group();
+    const cameraTarget = new THREE.Vector3(0, 1.35, 0);
+    const desiredCameraTarget = new THREE.Vector3(0, 1.35, 0);
+    const desiredCameraPosition = new THREE.Vector3();
+    const worldUp = new THREE.Vector3(0, 1, 0);
+
+    avatarAnchor.add(avatarVisualRoot);
+    scene.add(avatarAnchor);
+
+    scene.add(new THREE.HemisphereLight(0xffffff, 0x2a3552, 2.8));
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 1.35);
+    directionalLight.position.set(4, 7, 5);
+    scene.add(directionalLight);
+
+    const floor = new THREE.Mesh(
+      new THREE.CircleGeometry(24, 64),
+      new THREE.MeshStandardMaterial({
+        color: 0x0e1427,
+        roughness: 0.9,
+        metalness: 0.02
+      })
+    );
+    floor.rotation.x = -Math.PI / 2;
+    floor.position.y = -0.01;
+    scene.add(floor);
+
+    const grid = new THREE.GridHelper(24, 24, 0x4c5c86, 0x1e2740);
+    grid.position.y = 0.001;
+    scene.add(grid);
+
+    const cameraState = {
+      yaw: Math.PI,
+      pitch: 0.28,
+      distance: 3.35,
+      minDistance: 1.75,
+      maxDistance: 6.5
+    };
+
+    const pointerState = {
+      active: false,
+      pointerId: null,
+      lastX: 0,
+      lastY: 0
+    };
+
+    const keyState = {
+      KeyW: false,
+      KeyA: false,
+      KeyS: false,
+      KeyD: false
+    };
+
+    let currentVrm = null;
+    let ac2Ready = false;
+    let launchPending = false;
+    let ac2RequestId = null;
+    let ac2SessionPayload = null;
+    let sessionRequestPromise = null;
+    let activeAvatarKey = '';
+    let avatarLoadSequence = 0;
+
+    function setSessionText(value) {
+      sessionStatus.textContent = value;
+    }
+
+    function setAvatarText(value) {
+      avatarStatus.textContent = value;
+    }
+
+    function buildInitPayload(session) {
+      return Object.assign({}, session, {
+        apiBase: AC2_API_BASE,
+        uiMode: 'modal',
+        locale: document.documentElement.lang || 'en',
+        autoStart: false,
+        frameStyle: DEFAULT_FRAME_STYLE
+      });
+    }
+
+    async function requestSession() {
+      const response = await fetch(AC2_API_BASE + '/api/ac2/session', {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json'
         },
-        mobilePadding: {
-          top: 16,
-          right: 0,
-          bottom: 16,
-          left: 0
-        },
-        backdrop: 'rgba(4, 7, 20, 0.58)',
-        backdropFilter: 'blur(12px)',
-        panelBackground: 'rgba(11, 14, 40, 0.96)',
-        frameBackground: '#050814',
-        border: '1px solid rgba(255, 255, 255, 0.18)'
-      };
+        body: JSON.stringify({
+          source: AC2_SOURCE,
+          clientId: AC2_CLIENT_ID,
+          tenantId: AC2_TENANT_ID,
+          userId: AC2_USER_ID
+        })
+      });
 
-      const openButton = document.getElementById('open-ac2-button');
-      const modal = document.getElementById('ac2-modal');
-      const frame = document.getElementById('ac2-frame');
-
-      let ac2Ready = false;
-      let launchPending = false;
-      let ac2RequestId = null;
-      let ac2SessionPayload = null;
-
-      function openModal() {
-        modal.hidden = false;
-        modal.setAttribute('aria-hidden', 'false');
+      if (!response.ok) {
+        throw new Error('Failed to create AC2 session (' + response.status + ')');
       }
 
-      function closeModal(options) {
-        const reset = !options || options.reset !== false;
-        modal.hidden = true;
-        modal.setAttribute('aria-hidden', 'true');
-        launchPending = false;
-        ac2Ready = false;
-        ac2RequestId = null;
-        if (reset) {
-          frame.removeAttribute('src');
-        }
+      return response.json();
+    }
+
+    async function ensureSession() {
+      if (ac2SessionPayload && ac2SessionPayload.sessionToken) {
+        return ac2SessionPayload;
       }
 
-      async function requestSession() {
-        const response = await fetch(AC2_API_BASE + '/api/ac2/session', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            tenantId: AC2_TENANT_ID,
-            userId: AC2_USER_ID
-          })
-        });
-
-        if (!response.ok) {
-          throw new Error('Failed to create AC2 session (' + response.status + ')');
-        }
-
-        return response.json();
+      if (sessionRequestPromise) {
+        return sessionRequestPromise;
       }
 
-      function buildInitPayload(session) {
-        return Object.assign({}, session, {
-          apiBase: AC2_API_BASE,
-          uiMode: 'modal',
-          locale: document.documentElement.lang || 'en',
-          autoStart: false,
-          frameStyle: DEFAULT_FRAME_STYLE
-        });
-      }
-
-      function sendInit() {
-        if (!ac2Ready || !ac2SessionPayload || !frame.contentWindow) {
-          return;
-        }
-
-        frame.contentWindow.postMessage({
-          type: 'ac2:init',
-          requestId: ac2RequestId,
-          payload: ac2SessionPayload
-        }, AC2_ORIGIN);
-      }
-
-      async function launchAc2() {
-        openButton.disabled = true;
-
-        try {
-          ac2RequestId = 'partner-host-' + Date.now();
-          const session = await requestSession();
+      setSessionText('Requesting AC2 session...');
+      sessionRequestPromise = requestSession()
+        .then((session) => {
           ac2SessionPayload = buildInitPayload(session);
-          launchPending = true;
-          openModal();
-          if (frame.src !== AC2_URL) {
-            frame.src = AC2_URL;
-          } else if (ac2Ready) {
-            sendInit();
-          }
-        } finally {
-          openButton.disabled = false;
+          setSessionText('Session ready for ' + (ac2SessionPayload.clientId || AC2_CLIENT_ID));
+          return ac2SessionPayload;
+        })
+        .catch((error) => {
+          setSessionText('Session failed: ' + error.message);
+          throw error;
+        })
+        .finally(() => {
+          sessionRequestPromise = null;
+        });
+
+      return sessionRequestPromise;
+    }
+
+    async function fetchVrmFiles() {
+      const session = await ensureSession();
+      const response = await fetch(AC2_API_BASE + '/api/ac2/files?userId=' + encodeURIComponent(session.userId || AC2_USER_ID), {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          Authorization: 'Bearer ' + session.sessionToken
         }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch VRM files (' + response.status + ')');
       }
 
-      openButton.addEventListener('click', () => {
-        launchAc2().catch((error) => {
-          console.error(error);
-          window.alert(error && error.message ? error.message : 'Unable to open AC2.');
-          closeModal();
-        });
-      });
+      return response.json();
+    }
 
-      modal.addEventListener('click', (event) => {
-        if (event.target instanceof Element && event.target.hasAttribute('data-ac2-close')) {
-          closeModal();
-        }
-      });
-
-      window.addEventListener('keydown', (event) => {
-        if (event.key === 'Escape' && !modal.hidden) {
-          closeModal();
-        }
-      });
-
-      window.addEventListener('message', (event) => {
-        if (event.origin !== AC2_ORIGIN) {
-          return;
-        }
-
-        const message = event.data || {};
-        if (!message.type) {
-          return;
-        }
-
-        if (message.type === 'ac2:ready') {
-          ac2Ready = true;
-          if (launchPending) {
-            sendInit();
+    async function fetchDownloadUrl(key, expiresIn = 3600) {
+      const session = await ensureSession();
+      const response = await fetch(
+        AC2_API_BASE + '/api/ac2/download-url?key=' + encodeURIComponent(key) + '&expiresIn=' + encodeURIComponent(expiresIn),
+        {
+          method: 'GET',
+          credentials: 'include',
+          headers: {
+            Authorization: 'Bearer ' + session.sessionToken
           }
-          return;
         }
+      );
 
-        if (message.type === 'ac2:init-ack') {
-          launchPending = false;
-          return;
-        }
+      if (!response.ok) {
+        throw new Error('Failed to create download URL (' + response.status + ')');
+      }
 
-        if (message.type === 'ac2:close-request') {
-          closeModal({ reset: false });
-          return;
-        }
+      return response.json();
+    }
 
-        if (message.type === 'ac2:error' || message.type === 'ac2:blocked') {
-          console.error('AC2 host event:', message.payload || {});
+    function openModal() {
+      modal.hidden = false;
+      modal.setAttribute('aria-hidden', 'false');
+    }
+
+    function closeModal(options = {}) {
+      modal.hidden = true;
+      modal.setAttribute('aria-hidden', 'true');
+      launchPending = false;
+      ac2Ready = false;
+      ac2RequestId = null;
+      if (options.reset !== false) {
+        frame.removeAttribute('src');
+      }
+    }
+
+    function sendInit() {
+      if (!ac2Ready || !ac2SessionPayload || !frame.contentWindow) {
+        return;
+      }
+
+      frame.contentWindow.postMessage({
+        type: 'ac2:init',
+        requestId: ac2RequestId,
+        payload: ac2SessionPayload
+      }, AC2_ORIGIN);
+    }
+
+    async function launchAc2() {
+      openButton.disabled = true;
+
+      try {
+        await ensureSession();
+        ac2RequestId = 'partner-host-' + Date.now();
+        launchPending = true;
+        openModal();
+        if (frame.src !== AC2_URL) {
+          frame.src = AC2_URL;
+        } else if (ac2Ready) {
+          sendInit();
         }
+      } finally {
+        openButton.disabled = false;
+      }
+    }
+
+    function disposeCurrentAvatar() {
+      if (!currentVrm) {
+        return;
+      }
+
+      avatarVisualRoot.remove(currentVrm.scene);
+      VRMUtils.deepDispose(currentVrm.scene);
+      currentVrm = null;
+    }
+
+    async function loadHostAvatar(url, meta = {}) {
+      const loadId = ++avatarLoadSequence;
+      setAvatarText('Loading ' + (meta.displayName || meta.key || 'avatar') + '...');
+
+      const gltf = await loader.loadAsync(url);
+      if (loadId !== avatarLoadSequence) {
+        return;
+      }
+
+      const vrm = gltf.userData.vrm;
+      if (!vrm) {
+        throw new Error('The selected file is not a VRM.');
+      }
+
+      VRMUtils.removeUnnecessaryVertices(gltf.scene);
+      VRMUtils.removeUnnecessaryJoints(gltf.scene);
+
+      disposeCurrentAvatar();
+
+      currentVrm = vrm;
+      avatarVisualRoot.add(vrm.scene);
+      vrm.scene.position.set(0, 0, 0);
+      vrm.scene.rotation.set(0, Math.PI, 0);
+      avatarAnchor.position.set(0, 0, 0);
+
+      activeAvatarKey = meta.key || '';
+      setAvatarText(meta.displayName || meta.key || 'Avatar loaded');
+    }
+
+    async function syncSelectedAvatar(selection) {
+      if (!selection) {
+        return;
+      }
+
+      const nextKey = selection.key || '';
+      const nextName = selection.fileName || selection.label || nextKey || 'avatar.vrm';
+      let resolvedUrl = selection.url || '';
+
+      if (nextKey) {
+        const result = await fetchDownloadUrl(nextKey);
+        resolvedUrl = result && result.url ? result.url : resolvedUrl;
+      }
+
+      if (!resolvedUrl) {
+        throw new Error('No VRM URL available for the selected avatar.');
+      }
+
+      await loadHostAvatar(resolvedUrl, {
+        key: nextKey,
+        displayName: nextName
       });
-    })();
+    }
+
+    async function loadInitialAvatarFromStorage() {
+      const result = await fetchVrmFiles();
+      const files = Array.isArray(result.files) ? result.files.slice() : [];
+      if (!files.length) {
+        setAvatarText('No VRM files available for this AC2 user yet.');
+        return;
+      }
+
+      files.sort((left, right) => {
+        return new Date(right.uploadedAt || 0).getTime() - new Date(left.uploadedAt || 0).getTime();
+      });
+
+      await syncSelectedAvatar({
+        key: files[0].key,
+        fileName: files[0].fileName,
+        source: 'remote'
+      });
+    }
+
+    function updateMovement(delta) {
+      const horizontal = (keyState.KeyD ? 1 : 0) - (keyState.KeyA ? 1 : 0);
+      const vertical = (keyState.KeyW ? 1 : 0) - (keyState.KeyS ? 1 : 0);
+      if (!horizontal && !vertical) {
+        return;
+      }
+
+      const moveDirection = new THREE.Vector3();
+      const forward = new THREE.Vector3(-Math.sin(cameraState.yaw), 0, -Math.cos(cameraState.yaw)).normalize();
+      const right = new THREE.Vector3().crossVectors(forward, worldUp).normalize();
+
+      moveDirection.addScaledVector(forward, vertical);
+      moveDirection.addScaledVector(right, horizontal);
+
+      if (moveDirection.lengthSq() === 0) {
+        return;
+      }
+
+      moveDirection.normalize();
+      avatarAnchor.position.addScaledVector(moveDirection, delta * 2.4);
+      avatarVisualRoot.rotation.y = Math.atan2(moveDirection.x, moveDirection.z) + Math.PI;
+    }
+
+    function updateCamera(delta) {
+      desiredCameraTarget.set(
+        avatarAnchor.position.x,
+        avatarAnchor.position.y + 1.35,
+        avatarAnchor.position.z
+      );
+      cameraTarget.lerp(desiredCameraTarget, 1 - Math.exp(-delta * 10));
+
+      const cosPitch = Math.cos(cameraState.pitch);
+      desiredCameraPosition.set(
+        cameraTarget.x + Math.sin(cameraState.yaw) * cosPitch * cameraState.distance,
+        cameraTarget.y + Math.sin(cameraState.pitch) * cameraState.distance + 0.05,
+        cameraTarget.z + Math.cos(cameraState.yaw) * cosPitch * cameraState.distance
+      );
+
+      camera.position.lerp(desiredCameraPosition, 1 - Math.exp(-delta * 12));
+      camera.lookAt(cameraTarget);
+    }
+
+    function animate() {
+      const delta = Math.min(clock.getDelta(), 0.05);
+      updateMovement(delta);
+      if (currentVrm) {
+        currentVrm.update(delta);
+      }
+      updateCamera(delta);
+      renderer.render(scene, camera);
+      requestAnimationFrame(animate);
+    }
+
+    function handleResize() {
+      const width = window.innerWidth;
+      const height = window.innerHeight;
+      camera.aspect = width / height;
+      camera.updateProjectionMatrix();
+      renderer.setSize(width, height, false);
+    }
+
+    sceneCanvas.addEventListener('pointerdown', (event) => {
+      if (event.button !== 0) {
+        return;
+      }
+
+      pointerState.active = true;
+      pointerState.pointerId = event.pointerId;
+      pointerState.lastX = event.clientX;
+      pointerState.lastY = event.clientY;
+      sceneCanvas.classList.add('is-dragging');
+      sceneCanvas.setPointerCapture(event.pointerId);
+    });
+
+    sceneCanvas.addEventListener('pointermove', (event) => {
+      if (!pointerState.active || event.pointerId !== pointerState.pointerId) {
+        return;
+      }
+
+      const deltaX = event.clientX - pointerState.lastX;
+      const deltaY = event.clientY - pointerState.lastY;
+      pointerState.lastX = event.clientX;
+      pointerState.lastY = event.clientY;
+
+      cameraState.yaw -= deltaX * 0.006;
+      cameraState.pitch = THREE.MathUtils.clamp(cameraState.pitch - deltaY * 0.0045, -0.15, 0.75);
+    });
+
+    function releasePointer(event) {
+      if (event.pointerId !== pointerState.pointerId) {
+        return;
+      }
+
+      pointerState.active = false;
+      pointerState.pointerId = null;
+      sceneCanvas.classList.remove('is-dragging');
+      if (sceneCanvas.hasPointerCapture(event.pointerId)) {
+        sceneCanvas.releasePointerCapture(event.pointerId);
+      }
+    }
+
+    sceneCanvas.addEventListener('pointerup', releasePointer);
+    sceneCanvas.addEventListener('pointercancel', releasePointer);
+
+    sceneCanvas.addEventListener('wheel', (event) => {
+      event.preventDefault();
+      cameraState.distance = THREE.MathUtils.clamp(
+        cameraState.distance + event.deltaY * 0.0025,
+        cameraState.minDistance,
+        cameraState.maxDistance
+      );
+    }, { passive: false });
+
+    window.addEventListener('keydown', (event) => {
+      if (Object.prototype.hasOwnProperty.call(keyState, event.code)) {
+        keyState[event.code] = true;
+      }
+
+      if (event.key === 'Escape' && !modal.hidden) {
+        closeModal();
+      }
+    });
+
+    window.addEventListener('keyup', (event) => {
+      if (Object.prototype.hasOwnProperty.call(keyState, event.code)) {
+        keyState[event.code] = false;
+      }
+    });
+
+    openButton.addEventListener('click', () => {
+      launchAc2().catch((error) => {
+        console.error(error);
+        setSessionText('AC2 open failed: ' + error.message);
+        closeModal();
+      });
+    });
+
+    modal.addEventListener('click', (event) => {
+      if (event.target instanceof Element && event.target.hasAttribute('data-ac2-close')) {
+        closeModal();
+      }
+    });
+
+    window.addEventListener('message', (event) => {
+      if (event.origin !== AC2_ORIGIN) {
+        return;
+      }
+
+      const message = event.data || {};
+      if (!message.type) {
+        return;
+      }
+
+      if (message.type === 'ac2:ready') {
+        ac2Ready = true;
+        if (launchPending) {
+          sendInit();
+        }
+        return;
+      }
+
+      if (message.type === 'ac2:init-ack') {
+        launchPending = false;
+        return;
+      }
+
+      if (message.type === 'ac2:avatar-selected') {
+        syncSelectedAvatar(message.payload || {}).catch((error) => {
+          console.error(error);
+          setAvatarText('Avatar sync failed: ' + error.message);
+        });
+        return;
+      }
+
+      if (message.type === 'ac2:close-request') {
+        closeModal({ reset: false });
+        return;
+      }
+
+      if (message.type === 'ac2:error' || message.type === 'ac2:blocked') {
+        console.error('AC2 host event:', message.payload || {});
+        return;
+      }
+    });
+
+    window.addEventListener('resize', handleResize);
+
+    async function initializeHost() {
+      handleResize();
+      camera.position.set(0, 1.65, 3.35);
+      camera.lookAt(cameraTarget);
+      animate();
+
+      try {
+        await ensureSession();
+        await loadInitialAvatarFromStorage();
+      } catch (error) {
+        console.error(error);
+        setAvatarText('Unable to load initial avatar: ' + error.message);
+      }
+    }
+
+    initializeHost();
   </script>
 </body>
 </html>
