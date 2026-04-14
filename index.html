@@ -229,7 +229,8 @@
       "imports": {
         "three": "https://unpkg.com/three@0.160.1/build/three.module.js",
         "three/addons/": "https://unpkg.com/three@0.160.1/examples/jsm/",
-        "@pixiv/three-vrm": "https://esm.sh/@pixiv/three-vrm@2.1.2?bundle&external=three"
+        "@pixiv/three-vrm": "https://esm.sh/@pixiv/three-vrm@2.1.2?bundle&external=three",
+        "@pixiv/three-vrm-animation": "https://esm.sh/@pixiv/three-vrm-animation@2.1.2?bundle&external=three"
       }
     }
   </script>
@@ -277,6 +278,7 @@
     import * as THREE from 'three';
     import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
     import { VRMLoaderPlugin, VRMUtils } from '@pixiv/three-vrm';
+    import { VRMAnimationLoaderPlugin, createVRMAnimationClip } from '@pixiv/three-vrm-animation';
 
     const AC2_ORIGIN = 'https://geosephlien.github.io';
     const AC2_URL = 'https://geosephlien.github.io/ac2/?embedded=1&uiMode=modal';
@@ -391,6 +393,10 @@
     };
 
     let currentVrm = null;
+    let currentMixer = null;
+    let idleAction = null;
+    let walkAction = null;
+    let isWalkingAnim = false;
     let ac2Ready = false;
     let launchPending = false;
     let ac2RequestId = null;
@@ -554,6 +560,14 @@
         return;
       }
 
+      if (currentMixer) {
+        currentMixer.stopAllAction();
+        currentMixer = null;
+        idleAction = null;
+        walkAction = null;
+        isWalkingAnim = false;
+      }
+
       avatarVisualRoot.remove(currentVrm.scene);
       VRMUtils.deepDispose(currentVrm.scene);
       currentVrm = null;
@@ -596,6 +610,49 @@
 
       activeAvatarKey = meta.key || '';
       setAvatarText(meta.displayName || meta.key || 'Avatar loaded');
+
+      loadVrmaForVrm(vrm).catch((err) => console.warn('VRMA load error:', err));
+    }
+
+    async function loadVrmaForVrm(vrm) {
+      const animLoader = new GLTFLoader();
+      animLoader.crossOrigin = 'anonymous';
+      animLoader.register((parser) => new VRMAnimationLoaderPlugin(parser));
+
+      async function loadClip(path) {
+        const gltf = await animLoader.loadAsync(path);
+        const vrmAnim = gltf.userData.vrmAnimations && gltf.userData.vrmAnimations[0];
+        if (!vrmAnim) return null;
+        return createVRMAnimationClip(vrmAnim, vrm);
+      }
+
+      const [idleClip, walkClip] = await Promise.all([
+        loadClip('./vrmas/ani_Idle_Stand_Female.vrma'),
+        loadClip('./vrmas/Walk.vrma')
+      ]);
+
+      const mixer = new THREE.AnimationMixer(vrm.scene);
+      idleAction = idleClip ? mixer.clipAction(idleClip) : null;
+      walkAction = walkClip ? mixer.clipAction(walkClip) : null;
+
+      if (idleAction) {
+        idleAction.play();
+      }
+
+      currentMixer = mixer;
+      isWalkingAnim = false;
+    }
+
+    function setAnimationWalking(walking) {
+      if (walking === isWalkingAnim) return;
+      isWalkingAnim = walking;
+      if (walking) {
+        if (idleAction) idleAction.fadeOut(0.2);
+        if (walkAction) walkAction.reset().fadeIn(0.2).play();
+      } else {
+        if (walkAction) walkAction.fadeOut(0.2);
+        if (idleAction) idleAction.reset().fadeIn(0.2).play();
+      }
     }
 
     async function syncSelectedAvatar(selection) {
@@ -644,6 +701,7 @@
     function updateMovement(delta) {
       const horizontal = (keyState.KeyD ? 1 : 0) - (keyState.KeyA ? 1 : 0);
       const vertical = (keyState.KeyW ? 1 : 0) - (keyState.KeyS ? 1 : 0);
+      setAnimationWalking(!!(horizontal || vertical));
       if (!horizontal && !vertical) {
         return;
       }
@@ -686,6 +744,9 @@
     function animate() {
       const delta = Math.min(clock.getDelta(), 0.05);
       updateMovement(delta);
+      if (currentMixer) {
+        currentMixer.update(delta);
+      }
       if (currentVrm) {
         currentVrm.update(delta);
       }
