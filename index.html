@@ -284,9 +284,6 @@
     const AC2_URL = 'https://geosephlien.github.io/ac2/?embedded=1&uiMode=modal';
     const AC2_API_BASE = 'https://ac2-host-api-avatar-page.kuanyi-lien.workers.dev';
     const AC2_TENANT_ID = 'viverse';
-    const AC2_USER_ID = 'user-001';
-    const AC2_CLIENT_ID = 'demo';
-    const AC2_SOURCE = 'demo';
     const DEFAULT_FRAME_STYLE = {
       source: 'partner-host',
       placement: 'center',
@@ -431,10 +428,7 @@
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          source: AC2_SOURCE,
-          clientId: AC2_CLIENT_ID,
-          tenantId: AC2_TENANT_ID,
-          userId: AC2_USER_ID
+          tenantId: AC2_TENANT_ID
         })
       });
 
@@ -458,7 +452,7 @@
       sessionRequestPromise = requestSession()
         .then((session) => {
           ac2SessionPayload = buildInitPayload(session);
-          setSessionText('Session ready for ' + (ac2SessionPayload.clientId || AC2_CLIENT_ID));
+          setSessionText('Session ready for tenant ' + (ac2SessionPayload.tenantId || AC2_TENANT_ID));
           return ac2SessionPayload;
         })
         .catch((error) => {
@@ -474,7 +468,7 @@
 
     async function fetchVrmFiles() {
       const session = await ensureSession();
-      const response = await fetch(AC2_API_BASE + '/api/ac2/files?userId=' + encodeURIComponent(session.userId || AC2_USER_ID), {
+      const response = await fetch(AC2_API_BASE + '/api/ac2/files', {
         method: 'GET',
         credentials: 'include',
         headers: {
