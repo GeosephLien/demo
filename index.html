@@ -115,6 +115,36 @@
       line-height: 1.55;
     }
 
+    .quick-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .quick-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 44px;
+      padding: 0.8rem 1.2rem;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      background: rgba(255, 255, 255, 0.06);
+      color: #f6f8ff;
+      font-size: 0.92rem;
+      font-weight: 700;
+      text-decoration: none;
+      transition: transform 160ms ease, background-color 160ms ease, border-color 160ms ease;
+    }
+
+    .quick-link:hover,
+    .quick-link:focus-visible {
+      transform: translateY(-1px);
+      background: rgba(255, 255, 255, 0.12);
+      border-color: rgba(145, 101, 255, 0.46);
+    }
+
     .open-ac2-button {
       appearance: none;
       margin-top: 16px;
@@ -255,6 +285,10 @@
       </div>
 
       <button id="open-ac2-button" class="open-ac2-button" type="button">Open AC2</button>
+      <div class="quick-links" aria-label="Quick links">
+        <a class="quick-link" href="https://geosephlien.github.io/landing/">Back</a>
+        <a class="quick-link" href="https://geosephlien.github.io/register/">Get SDK</a>
+      </div>
       <p class="controls-copy">Drag on the scene to orbit the camera. Use <code>W</code> <code>A</code> <code>S</code> <code>D</code> to move the avatar inside the host scene.</p>
     </section>
 
