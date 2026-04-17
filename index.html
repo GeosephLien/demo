@@ -539,6 +539,26 @@
       return response.json();
     }
 
+    async function fetchAnimationUrl(name, expiresIn = 3600) {
+      const session = await ensureSession();
+      const response = await fetch(
+        AC2_API_BASE + '/api/ac2/animation-url?name=' + encodeURIComponent(name) + '&expiresIn=' + encodeURIComponent(expiresIn),
+        {
+          method: 'GET',
+          credentials: 'include',
+          headers: {
+            Authorization: 'Bearer ' + session.sessionToken
+          }
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to create animation URL (' + response.status + ')');
+      }
+
+      return response.json();
+    }
+
     async function fetchActiveAvatar() {
       const session = await ensureSession();
       const response = await fetch(AC2_API_BASE + '/api/ac2/active-avatar', {
@@ -673,16 +693,17 @@
       animLoader.crossOrigin = 'anonymous';
       animLoader.register((parser) => new VRMAnimationLoaderPlugin(parser));
 
-      async function loadClip(path) {
-        const gltf = await animLoader.loadAsync(path);
+      async function loadClip(name) {
+        const animation = await fetchAnimationUrl(name);
+        const gltf = await animLoader.loadAsync(animation.url);
         const vrmAnim = gltf.userData.vrmAnimations && gltf.userData.vrmAnimations[0];
         if (!vrmAnim) return null;
         return createVRMAnimationClip(vrmAnim, vrm);
       }
 
       const [idleClip, walkClip] = await Promise.all([
-        loadClip('./vrmas/idle.vrma'),
-        loadClip('./vrmas/walk.vrma')
+        loadClip('idle'),
+        loadClip('walk')
       ]);
 
       const mixer = new THREE.AnimationMixer(vrm.scene);
