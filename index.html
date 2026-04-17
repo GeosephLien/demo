@@ -681,8 +681,8 @@
       }
 
       const [idleClip, walkClip] = await Promise.all([
-        loadClip('./vrmas/ani_Idle_Stand_Female.vrma'),
-        loadClip('./vrmas/Walk.vrma')
+        loadClip('./vrmas/idle.vrma'),
+        loadClip('./vrmas/walk.vrma')
       ]);
 
       const mixer = new THREE.AnimationMixer(vrm.scene);
