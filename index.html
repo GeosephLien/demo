@@ -436,6 +436,9 @@
     let sessionRequestPromise = null;
     let activeAvatarKey = '';
     let avatarLoadSequence = 0;
+    let animationFrameId = 0;
+    let animationRunning = false;
+    let webglContextLost = false;
 
     function setSessionText(value) {
       sessionStatus.textContent = value;
@@ -758,6 +761,24 @@
       }
     }
 
+    async function reloadCurrentAvatar() {
+      if (!activeAvatarKey) {
+        await loadInitialAvatarFromStorage();
+        return;
+      }
+
+      const result = await fetchDownloadUrl(activeAvatarKey);
+      const resolvedUrl = result && result.url ? result.url : '';
+      if (!resolvedUrl) {
+        throw new Error('No VRM URL available for the active avatar.');
+      }
+
+      await loadHostAvatar(resolvedUrl, {
+        key: activeAvatarKey,
+        displayName: activeAvatarKey
+      });
+    }
+
     async function loadInitialAvatarFromStorage() {
       const result = await fetchVrmFiles();
       const files = Array.isArray(result.files) ? result.files.slice() : [];
@@ -834,6 +855,11 @@
     }
 
     function animate() {
+      animationFrameId = 0;
+      if (!animationRunning || webglContextLost) {
+        return;
+      }
+
       const delta = Math.min(clock.getDelta(), 0.05);
       updateMovement(delta);
       if (currentMixer) {
@@ -844,10 +870,32 @@
       }
       updateCamera(delta);
       renderer.render(scene, camera);
-      requestAnimationFrame(animate);
+      animationFrameId = requestAnimationFrame(animate);
+    }
+
+    function stopAnimationLoop() {
+      animationRunning = false;
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+        animationFrameId = 0;
+      }
+    }
+
+    function startAnimationLoop() {
+      if (animationRunning || webglContextLost) {
+        return;
+      }
+
+      animationRunning = true;
+      clock.getDelta();
+      animationFrameId = requestAnimationFrame(animate);
     }
 
     function handleResize() {
+      if (webglContextLost) {
+        return;
+      }
+
       const width = window.innerWidth;
       const height = window.innerHeight;
       camera.aspect = width / height;
@@ -980,12 +1028,43 @@
     });
 
     window.addEventListener('resize', handleResize);
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) {
+        stopAnimationLoop();
+        return;
+      }
+
+      startAnimationLoop();
+    });
+
+    sceneCanvas.addEventListener('webglcontextlost', (event) => {
+      event.preventDefault();
+      webglContextLost = true;
+      stopAnimationLoop();
+      setAvatarText('WebGL context lost. Attempting to recover...');
+    });
+
+    sceneCanvas.addEventListener('webglcontextrestored', () => {
+      webglContextLost = false;
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.75));
+      handleResize();
+      startAnimationLoop();
+
+      reloadCurrentAvatar()
+        .then(() => {
+          setAvatarText('Avatar restored after WebGL reset.');
+        })
+        .catch((error) => {
+          console.error(error);
+          setAvatarText('WebGL recovered, but avatar reload failed: ' + error.message);
+        });
+    });
 
     async function initializeHost() {
       handleResize();
       camera.position.set(0, 1.65, 3.35);
       camera.lookAt(cameraTarget);
-      animate();
+      startAnimationLoop();
 
       try {
         await ensureSession();
