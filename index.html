@@ -318,6 +318,7 @@
     const AC2_URL = 'https://geosephlien.github.io/ac2/?embedded=1&uiMode=modal';
     const AC2_API_BASE = 'https://ac2-host-api-avatar-page.kuanyi-lien.workers.dev';
     const AC2_TENANT_ID = 'viverse';
+    const HOST_ORIGIN = window.location.origin;
     const DEFAULT_FRAME_STYLE = {
       source: 'partner-host',
       placement: 'center',
@@ -462,7 +463,8 @@
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          tenantId: AC2_TENANT_ID
+          tenantId: AC2_TENANT_ID,
+          domain: HOST_ORIGIN
         })
       });
 
