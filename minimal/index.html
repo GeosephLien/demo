@@ -63,9 +63,16 @@
       color: rgba(214, 222, 255, 0.58);
     }
 
+    .label + .value {
+      margin-top: 0.4rem;
+    }
+
+    .value + .label {
+      margin-top: 1rem;
+    }
+
     .value {
       display: block;
-      margin-top: 0.4rem;
       font-weight: 600;
       word-break: break-word;
     }
@@ -140,6 +147,13 @@
       <span id="session-status" class="value">Initializing AC2 session...</span>
     </section>
 
+    <section class="status-card" aria-label="Host configuration">
+      <span class="label">Tenant ID</span>
+      <span id="tenant-id-value" class="value"></span>
+      <span class="label">Host Origin</span>
+      <span id="host-origin-value" class="value"></span>
+    </section>
+
     <button id="open-ac2-button" class="open-ac2-button" type="button">Open AC2</button>
   </main>
 
@@ -159,8 +173,11 @@
   <script type="module">
     import { createAc2Host } from './ac2-host.js';
 
+    const tenantId = 'viverse';
+    const hostOrigin = window.location.origin;
+
     const ac2Host = createAc2Host({
-      tenantId: 'viverse',
+      tenantId,
       apiBase: 'https://ac2-host-api-avatar-page.kuanyi-lien.workers.dev',
       ac2Origin: 'https://geosephlien.github.io',
       ac2Url: 'https://geosephlien.github.io/ac2/?embedded=1&uiMode=modal',
@@ -169,6 +186,9 @@
       frame: document.getElementById('ac2-frame'),
       sessionStatus: document.getElementById('session-status')
     });
+
+    document.getElementById('tenant-id-value').textContent = tenantId;
+    document.getElementById('host-origin-value').textContent = hostOrigin;
 
     ac2Host.onAvatarSelected((selection) => {
       console.log('AC2 avatar selected:', selection);
