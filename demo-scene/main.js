@@ -1,8 +1,11 @@
 import { createAc2Host } from './ac2-host.js';
 import { createVrmScene } from './vrm-scene.js';
 
+const urlParams = new URLSearchParams(window.location.search);
+const tenantId = (urlParams.get('tenant') || 'viverse').trim() || 'viverse';
+
 const ac2Host = createAc2Host({
-  tenantId: 'viverse',
+  tenantId,
   apiBase: 'https://ac2-host-api-avatar-page.kuanyi-lien.workers.dev',
   ac2Origin: 'https://geosephlien.github.io',
   ac2Url: 'https://geosephlien.github.io/ac2/?embedded=1&uiMode=modal',
@@ -11,6 +14,11 @@ const ac2Host = createAc2Host({
   frame: document.getElementById('ac2-frame'),
   sessionStatus: document.getElementById('session-status')
 });
+
+const overlayTitle = document.querySelector('.overlay-title');
+if (overlayTitle) {
+  overlayTitle.textContent = `${tenantId} VRM Host`;
+}
 
 const vrmScene = createVrmScene({
   canvas: document.getElementById('host-scene'),
