@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AC2 Minimal Host</title>
+  <title>AC2 Host</title>
   <style>
     :root {
       color-scheme: dark;
@@ -47,8 +47,7 @@
       color: rgba(232, 238, 255, 0.78);
     }
 
-    .status-card,
-    .result-card {
+    .status-card {
       margin-top: 16px;
       padding: 14px 16px;
       border-radius: 18px;
@@ -69,14 +68,6 @@
       margin-top: 0.4rem;
       font-weight: 600;
       word-break: break-word;
-    }
-
-    pre {
-      margin: 0.7rem 0 0;
-      white-space: pre-wrap;
-      word-break: break-word;
-      font: 0.9rem/1.55 Consolas, "SFMono-Regular", monospace;
-      color: #dfe7ff;
     }
 
     .open-ac2-button {
@@ -141,7 +132,7 @@
 </head>
 <body>
   <main class="shell">
-    <h1>AC2 Minimal Host</h1>
+    <h1>AC2 Host</h1>
     <p>This example keeps only the AC2 integration flow: create a session, open AC2, and listen for avatar selections.</p>
 
     <section class="status-card" aria-label="Session status">
@@ -150,11 +141,6 @@
     </section>
 
     <button id="open-ac2-button" class="open-ac2-button" type="button">Open AC2</button>
-
-    <section class="result-card" aria-label="Selection result">
-      <span class="label">Last Selection</span>
-      <pre id="selection-output">Waiting for avatar selection...</pre>
-    </section>
   </main>
 
   <div id="ac2-modal" class="ac2-modal" hidden aria-hidden="true">
@@ -184,10 +170,8 @@
       sessionStatus: document.getElementById('session-status')
     });
 
-    const selectionOutput = document.getElementById('selection-output');
-
     ac2Host.onAvatarSelected((selection) => {
-      selectionOutput.textContent = JSON.stringify(selection, null, 2);
+      console.log('AC2 avatar selected:', selection);
     });
 
     ac2Host.onError((error) => {
