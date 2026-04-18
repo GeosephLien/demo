@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Partner VRM Host</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./style.css">
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.160.1/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.160.1/examples/jsm/",
+        "@pixiv/three-vrm": "https://esm.sh/@pixiv/three-vrm@2.1.2?bundle&external=three",
+        "@pixiv/three-vrm-animation": "https://esm.sh/@pixiv/three-vrm-animation@2.1.2?bundle&external=three"
+      }
+    }
+  </script>
+</head>
+<body>
+  <div class="app-shell">
+    <canvas id="host-scene" class="scene-canvas" aria-label="Partner VRM scene"></canvas>
+
+    <section class="overlay-panel" aria-label="Partner host controls">
+      <h1 class="overlay-title">Partner VRM Host</h1>
+      <p class="overlay-copy">This demo keeps the AC2 integration and adds a playable VRM scene as a removable example module.</p>
+
+      <div class="status-grid">
+        <div class="status-card">
+          <span class="status-label">Session</span>
+          <span id="session-status" class="status-value">Initializing AC2 session...</span>
+        </div>
+        <div class="status-card">
+          <span class="status-label">Active Avatar</span>
+          <span id="avatar-status" class="status-value">Waiting for avatar from storage...</span>
+        </div>
+      </div>
+
+      <button id="open-ac2-button" class="open-ac2-button" type="button">Open AC2</button>
+      <div class="quick-links" aria-label="Quick links">
+        <a class="quick-link" href="https://geosephlien.github.io/landing/">Back</a>
+        <a class="quick-link" href="https://geosephlien.github.io/register/">Get SDK</a>
+      </div>
+      <p class="controls-copy">Drag on the scene to orbit the camera. Use <code>W</code> <code>A</code> <code>S</code> <code>D</code> to move the avatar inside the host scene.</p>
+    </section>
+
+    <div class="scene-help">AC2 selection sync: when a VRM is selected in AC2 viewer, this host requests its signed URL and replaces the current avatar.</div>
+  </div>
+
+  <div id="ac2-modal" class="ac2-modal" hidden aria-hidden="true">
+    <div class="ac2-backdrop" data-ac2-close></div>
+    <section class="ac2-panel" role="dialog" aria-modal="true" aria-label="Avatar Creator 2">
+      <iframe
+        id="ac2-frame"
+        class="ac2-frame"
+        title="Avatar Creator 2"
+        allow="clipboard-write"
+        referrerpolicy="strict-origin-when-cross-origin"
+      ></iframe>
+    </section>
+  </div>
+
+  <script type="module" src="./main.js"></script>
+</body>
+</html>

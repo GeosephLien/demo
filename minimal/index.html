@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AC2 Minimal Host</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family: Roboto, "Segoe UI", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      background:
+        radial-gradient(circle at top right, rgba(94, 80, 242, 0.32), transparent 34%),
+        linear-gradient(180deg, #091123 0%, #060913 100%);
+      color: #f6f8ff;
+    }
+
+    .shell {
+      width: min(720px, 100%);
+      padding: 24px;
+      border-radius: 24px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: rgba(10, 15, 28, 0.76);
+      box-shadow: 0 24px 64px rgba(2, 6, 18, 0.42);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 1.3rem;
+    }
+
+    p {
+      line-height: 1.6;
+      color: rgba(232, 238, 255, 0.78);
+    }
+
+    .status-card,
+    .result-card {
+      margin-top: 16px;
+      padding: 14px 16px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .label {
+      display: block;
+      font-size: 0.75rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: rgba(214, 222, 255, 0.58);
+    }
+
+    .value {
+      display: block;
+      margin-top: 0.4rem;
+      font-weight: 600;
+      word-break: break-word;
+    }
+
+    pre {
+      margin: 0.7rem 0 0;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font: 0.9rem/1.55 Consolas, "SFMono-Regular", monospace;
+      color: #dfe7ff;
+    }
+
+    .open-ac2-button {
+      appearance: none;
+      margin-top: 18px;
+      border: 0;
+      border-radius: 999px;
+      padding: 0.95rem 1.45rem;
+      font: inherit;
+      font-size: 0.98rem;
+      font-weight: 800;
+      color: #fff;
+      background: linear-gradient(135deg, #2764ff 0%, #675bff 58%, #9165ff 100%);
+      box-shadow: 0 18px 40px rgba(39, 100, 255, 0.26);
+      cursor: pointer;
+    }
+
+    .open-ac2-button:disabled {
+      cursor: wait;
+      opacity: 0.82;
+    }
+
+    .ac2-modal[hidden] {
+      display: none;
+    }
+
+    .ac2-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+    }
+
+    .ac2-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(5, 8, 20, 0.56);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+
+    .ac2-panel {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: min(1280px, calc(100vw - 32px));
+      height: min(780px, calc(100vh - 32px));
+      transform: translate(-50%, -50%);
+      overflow: hidden;
+      border-radius: 28px;
+      background: #050814;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      box-shadow: 0 36px 80px rgba(3, 8, 22, 0.45);
+    }
+
+    .ac2-frame {
+      width: 100%;
+      height: 100%;
+      border: 0;
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <h1>AC2 Minimal Host</h1>
+    <p>This example keeps only the AC2 integration flow: create a session, open AC2, and listen for avatar selections.</p>
+
+    <section class="status-card" aria-label="Session status">
+      <span class="label">Session</span>
+      <span id="session-status" class="value">Initializing AC2 session...</span>
+    </section>
+
+    <button id="open-ac2-button" class="open-ac2-button" type="button">Open AC2</button>
+
+    <section class="result-card" aria-label="Selection result">
+      <span class="label">Last Selection</span>
+      <pre id="selection-output">Waiting for avatar selection...</pre>
+    </section>
+  </main>
+
+  <div id="ac2-modal" class="ac2-modal" hidden aria-hidden="true">
+    <div class="ac2-backdrop" data-ac2-close></div>
+    <section class="ac2-panel" role="dialog" aria-modal="true" aria-label="Avatar Creator 2">
+      <iframe
+        id="ac2-frame"
+        class="ac2-frame"
+        title="Avatar Creator 2"
+        allow="clipboard-write"
+        referrerpolicy="strict-origin-when-cross-origin"
+      ></iframe>
+    </section>
+  </div>
+
+  <script type="module">
+    import { createAc2Host } from './ac2-host.js';
+
+    const ac2Host = createAc2Host({
+      tenantId: 'viverse',
+      apiBase: 'https://ac2-host-api-avatar-page.kuanyi-lien.workers.dev',
+      ac2Origin: 'https://geosephlien.github.io',
+      ac2Url: 'https://geosephlien.github.io/ac2/?embedded=1&uiMode=modal',
+      openButton: document.getElementById('open-ac2-button'),
+      modal: document.getElementById('ac2-modal'),
+      frame: document.getElementById('ac2-frame'),
+      sessionStatus: document.getElementById('session-status')
+    });
+
+    const selectionOutput = document.getElementById('selection-output');
+
+    ac2Host.onAvatarSelected((selection) => {
+      selectionOutput.textContent = JSON.stringify(selection, null, 2);
+    });
+
+    ac2Host.onError((error) => {
+      console.error(error);
+    });
+
+    ac2Host.ensureSession().catch((error) => {
+      console.error(error);
+    });
+  </script>
+</body>
+</html>
