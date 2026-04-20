@@ -54,7 +54,7 @@ export function createVrmScene(options) {
   scene.add(grid);
 
   const cameraState = {
-    yaw: Math.PI,
+    yaw: 0,
     pitch: 0.28,
     distance: 3.35,
     minDistance: 1.75,
