@@ -74,6 +74,7 @@ export function createVrmScene(options) {
     KeyS: false,
     KeyD: false
   };
+  let interactionEnabled = true;
 
   let currentVrm = null;
   let currentMixer = null;
@@ -375,6 +376,10 @@ export function createVrmScene(options) {
   }
 
   canvas.addEventListener('pointerdown', (event) => {
+    if (!interactionEnabled) {
+      return;
+    }
+
     if (event.button !== 0) {
       return;
     }
@@ -388,6 +393,10 @@ export function createVrmScene(options) {
   });
 
   canvas.addEventListener('pointermove', (event) => {
+    if (!interactionEnabled) {
+      return;
+    }
+
     if (!pointerState.active || event.pointerId !== pointerState.pointerId) {
       return;
     }
@@ -418,6 +427,10 @@ export function createVrmScene(options) {
   canvas.addEventListener('pointercancel', releasePointer);
 
   canvas.addEventListener('wheel', (event) => {
+    if (!interactionEnabled) {
+      return;
+    }
+
     event.preventDefault();
     cameraState.distance = THREE.MathUtils.clamp(
       cameraState.distance + event.deltaY * 0.0025,
@@ -427,6 +440,10 @@ export function createVrmScene(options) {
   }, { passive: false });
 
   window.addEventListener('keydown', (event) => {
+    if (!interactionEnabled) {
+      return;
+    }
+
     if (Object.prototype.hasOwnProperty.call(keyState, event.code)) {
       keyState[event.code] = true;
     }
@@ -488,11 +505,26 @@ export function createVrmScene(options) {
     startAnimationLoop();
   }
 
+  function setInteractionEnabled(enabled) {
+    interactionEnabled = enabled !== false;
+    if (interactionEnabled) {
+      return;
+    }
+
+    pointerState.active = false;
+    pointerState.pointerId = null;
+    canvas.classList.remove('is-dragging');
+    Object.keys(keyState).forEach((key) => {
+      keyState[key] = false;
+    });
+  }
+
   return {
     loadAvatarFromSelection,
     loadAvatarFromUrl,
     loadInitialAvatar,
     reloadCurrentAvatar,
+    setInteractionEnabled,
     setAvatarText,
     start
   };
