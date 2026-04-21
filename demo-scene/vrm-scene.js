@@ -519,7 +519,19 @@ export function createVrmScene(options) {
     });
   }
 
+  function getCurrentAvatarMeta() {
+    if (!currentAvatarMeta && !activeAvatarKey) {
+      return null;
+    }
+
+    return {
+      ...(currentAvatarMeta || {}),
+      key: activeAvatarKey || (currentAvatarMeta && currentAvatarMeta.key) || ''
+    };
+  }
+
   return {
+    getCurrentAvatarMeta,
     loadAvatarFromSelection,
     loadAvatarFromUrl,
     loadInitialAvatar,
