@@ -22,6 +22,12 @@
 <body>
   <div class="app-shell">
     <canvas id="host-scene" class="scene-canvas" aria-label="Partner VRM scene"></canvas>
+    <div class="scene-loading" id="scene-loading" hidden>
+      <div class="scene-loading-content" role="status" aria-live="polite">
+        <div class="scene-loading-spinner" aria-hidden="true"></div>
+        <span class="scene-loading-text" id="scene-loading-text">Loading avatar...</span>
+      </div>
+    </div>
 
     <section class="overlay-panel" aria-label="Partner host controls">
       <h1 class="overlay-title">Partner VRM Host</h1>

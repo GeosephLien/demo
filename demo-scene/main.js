@@ -22,7 +22,11 @@ if (overlayTitle) {
 
 const vrmScene = createVrmScene({
   canvas: document.getElementById('host-scene'),
-  avatarStatus: document.getElementById('avatar-status')
+  avatarStatus: document.getElementById('avatar-status'),
+  setLoadingState: createSceneLoadingController(
+    document.getElementById('scene-loading'),
+    document.getElementById('scene-loading-text')
+  )
 });
 
 vrmScene.start({
@@ -66,4 +70,31 @@ async function initialize() {
     console.error(error);
     vrmScene.setAvatarText('Unable to load initial avatar: ' + error.message);
   }
+}
+
+function createSceneLoadingController(overlay, text) {
+  let activeCount = 0;
+
+  return function setLoadingState(isLoading, message) {
+    if (!overlay) {
+      return;
+    }
+
+    if (isLoading) {
+      activeCount += 1;
+      overlay.hidden = false;
+      if (text) {
+        text.textContent = message || 'Loading avatar...';
+      }
+      return;
+    }
+
+    activeCount = Math.max(0, activeCount - 1);
+    if (activeCount === 0) {
+      overlay.hidden = true;
+      if (text) {
+        text.textContent = 'Loading avatar...';
+      }
+    }
+  };
 }

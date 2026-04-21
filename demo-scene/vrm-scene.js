@@ -4,7 +4,7 @@ import { VRMLoaderPlugin, VRMUtils } from '@pixiv/three-vrm';
 import { VRMAnimationLoaderPlugin, createVRMAnimationClip } from '@pixiv/three-vrm-animation';
 
 export function createVrmScene(options) {
-  const { canvas, avatarStatus } = options;
+  const { canvas, avatarStatus, setLoadingState } = options;
 
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 100);
@@ -95,6 +95,12 @@ export function createVrmScene(options) {
     }
   }
 
+  function setSceneLoading(isLoading, message) {
+    if (typeof setLoadingState === 'function') {
+      setLoadingState(isLoading, message);
+    }
+  }
+
   function disposeCurrentAvatar() {
     if (!currentVrm) {
       return;
@@ -155,39 +161,45 @@ export function createVrmScene(options) {
     }
 
     const loadId = ++avatarLoadSequence;
-    setAvatarText('Loading ' + (meta.displayName || meta.key || 'avatar') + '...');
+    const loadingLabel = 'Loading ' + (meta.displayName || meta.key || 'avatar') + '...';
+    setAvatarText(loadingLabel);
+    setSceneLoading(true, loadingLabel);
     const hadAvatarBeforeLoad = Boolean(currentVrm);
 
-    const gltf = await loader.loadAsync(url);
-    if (loadId !== avatarLoadSequence) {
-      return;
+    try {
+      const gltf = await loader.loadAsync(url);
+      if (loadId !== avatarLoadSequence) {
+        return;
+      }
+
+      const vrm = gltf.userData.vrm;
+      if (!vrm) {
+        throw new Error('The selected file is not a VRM.');
+      }
+
+      VRMUtils.removeUnnecessaryVertices(gltf.scene);
+      VRMUtils.removeUnnecessaryJoints(gltf.scene);
+
+      disposeCurrentAvatar();
+
+      currentVrm = vrm;
+      currentAvatarMeta = meta;
+      avatarVisualRoot.add(vrm.scene);
+      vrm.scene.position.set(0, 0, 0);
+      vrm.scene.rotation.set(0, Math.PI, 0);
+      if (!hadAvatarBeforeLoad) {
+        avatarAnchor.position.set(0, 0, 0);
+      }
+
+      activeAvatarKey = meta.key || '';
+      setAvatarText(meta.displayName || meta.key || 'Avatar loaded');
+
+      loadVrmaForVrm(vrm, loadId).catch((error) => {
+        console.warn('VRMA load error:', error);
+      });
+    } finally {
+      setSceneLoading(false);
     }
-
-    const vrm = gltf.userData.vrm;
-    if (!vrm) {
-      throw new Error('The selected file is not a VRM.');
-    }
-
-    VRMUtils.removeUnnecessaryVertices(gltf.scene);
-    VRMUtils.removeUnnecessaryJoints(gltf.scene);
-
-    disposeCurrentAvatar();
-
-    currentVrm = vrm;
-    currentAvatarMeta = meta;
-    avatarVisualRoot.add(vrm.scene);
-    vrm.scene.position.set(0, 0, 0);
-    vrm.scene.rotation.set(0, Math.PI, 0);
-    if (!hadAvatarBeforeLoad) {
-      avatarAnchor.position.set(0, 0, 0);
-    }
-
-    activeAvatarKey = meta.key || '';
-    setAvatarText(meta.displayName || meta.key || 'Avatar loaded');
-
-    loadVrmaForVrm(vrm, loadId).catch((error) => {
-      console.warn('VRMA load error:', error);
-    });
   }
 
   async function loadAvatarFromSelection(selection, resolveDownload) {
