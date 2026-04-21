@@ -219,7 +219,7 @@ export function createVrmScene(options) {
     const files = Array.isArray(result.files) ? result.files.slice() : [];
     if (!files.length) {
       setAvatarText('No VRM files available for this AC2 user yet.');
-      return;
+      return false;
     }
 
     let targetKey = null;
@@ -240,6 +240,7 @@ export function createVrmScene(options) {
       fileName: targetFile.fileName,
       source: 'remote'
     }, resolveDownload);
+    return true;
   }
 
   async function reloadCurrentAvatar(resolveDownload) {

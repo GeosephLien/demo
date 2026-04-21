@@ -54,11 +54,14 @@ initialize();
 async function initialize() {
   try {
     await ac2Host.ensureSession();
-    await vrmScene.loadInitialAvatar(
+    const hasAvatar = await vrmScene.loadInitialAvatar(
       () => ac2Host.fetchVrmFiles(),
       () => ac2Host.fetchActiveAvatar(),
       (key) => ac2Host.fetchDownloadUrl(key)
     );
+    if (!hasAvatar) {
+      await ac2Host.open();
+    }
   } catch (error) {
     console.error(error);
     vrmScene.setAvatarText('Unable to load initial avatar: ' + error.message);
