@@ -2,13 +2,55 @@ import { createAc2Host } from './ac2-host.js';
 import { createVrmScene } from './vrm-scene.js';
 
 const urlParams = new URLSearchParams(window.location.search);
+const runtimeConfig = window.__AC2_RUNTIME__ && typeof window.__AC2_RUNTIME__ === 'object'
+  ? window.__AC2_RUNTIME__
+  : {};
+
+function readRuntimeValue(name) {
+  const queryValue = urlParams.get(name);
+  if (typeof queryValue === 'string' && queryValue.trim()) {
+    return queryValue.trim();
+  }
+
+  const configValue = runtimeConfig[name];
+  if (typeof configValue === 'string' && configValue.trim()) {
+    return configValue.trim();
+  }
+
+  return '';
+}
+
+function normalizeUrl(value, fallback) {
+  try {
+    return new URL(String(value || '')).toString();
+  } catch {
+    return fallback;
+  }
+}
+
+function normalizeOrigin(value, fallback) {
+  try {
+    const parsed = new URL(String(value || ''));
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+      return fallback;
+    }
+    return parsed.origin;
+  } catch {
+    return fallback;
+  }
+}
+
 const tenantId = (urlParams.get('tenant') || 'viverse').trim() || 'viverse';
+const defaultSiteOrigin = 'https://geosephlien.github.io';
+const defaultAc2Url = `${defaultSiteOrigin}/ac2/?embedded=1&uiMode=modal`;
+const ac2Url = normalizeUrl(readRuntimeValue('ac2Url'), defaultAc2Url);
+const ac2Origin = normalizeOrigin(readRuntimeValue('ac2Origin'), normalizeOrigin(ac2Url, defaultSiteOrigin));
 
 const ac2Host = createAc2Host({
   tenantId,
-  apiBase: 'https://ac2-host-api-avatar-page.kuanyi-lien.workers.dev',
-  ac2Origin: 'https://geosephlien.github.io',
-  ac2Url: 'https://geosephlien.github.io/ac2/?embedded=1&uiMode=modal',
+  apiBase: readRuntimeValue('apiBase') || 'https://ac2-host-api-avatar-page.kuanyi-lien.workers.dev',
+  ac2Origin,
+  ac2Url,
   openButton: document.getElementById('open-ac2-button'),
   modal: document.getElementById('ac2-modal'),
   frame: document.getElementById('ac2-frame'),

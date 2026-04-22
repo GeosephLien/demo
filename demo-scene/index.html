@@ -46,8 +46,8 @@
 
       <button id="open-ac2-button" class="open-ac2-button" type="button">Open AC2</button>
       <div class="quick-links" aria-label="Quick links">
-        <a class="quick-link" href="https://geosephlien.github.io/landing/">Back</a>
-        <a class="quick-link" href="https://geosephlien.github.io/register/">Get SDK</a>
+        <a id="demo-scene-landing-link" class="quick-link" href="https://geosephlien.github.io/landing/">Back</a>
+        <a id="demo-scene-register-link" class="quick-link" href="https://geosephlien.github.io/register/">Get SDK</a>
       </div>
       <p class="controls-copy">Drag on the scene to orbit the camera. Use <code>W</code> <code>A</code> <code>S</code> <code>D</code> to move the avatar inside the host scene.</p>
     </section>
@@ -68,6 +68,47 @@
     </section>
   </div>
 
+  <script>
+    (function () {
+      const urlParams = new URLSearchParams(window.location.search);
+      const runtimeConfig = window.__AC2_RUNTIME__ && typeof window.__AC2_RUNTIME__ === 'object'
+        ? window.__AC2_RUNTIME__
+        : {};
+
+      function readRuntimeValue(name) {
+        const queryValue = urlParams.get(name);
+        if (typeof queryValue === 'string' && queryValue.trim()) {
+          return queryValue.trim();
+        }
+
+        const configValue = runtimeConfig[name];
+        if (typeof configValue === 'string' && configValue.trim()) {
+          return configValue.trim();
+        }
+
+        return '';
+      }
+
+      function normalizeUrl(value, fallback) {
+        try {
+          return new URL(String(value || '')).toString();
+        } catch {
+          return fallback;
+        }
+      }
+
+      const landingLink = document.getElementById('demo-scene-landing-link');
+      const registerLink = document.getElementById('demo-scene-register-link');
+
+      if (landingLink) {
+        landingLink.href = normalizeUrl(readRuntimeValue('landingUrl'), landingLink.href);
+      }
+
+      if (registerLink) {
+        registerLink.href = normalizeUrl(readRuntimeValue('registerUrl'), registerLink.href);
+      }
+    })();
+  </script>
   <script type="module" src="./main.js"></script>
 </body>
 </html>

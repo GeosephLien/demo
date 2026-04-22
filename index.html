@@ -124,9 +124,50 @@
 
     <div class="link-row">
       <a href="./README.md">View README</a>
-      <a href="../register/">Get SDK</a>
-      <a href="../landing/">Back to Landing</a>
+      <a id="demo-register-link" href="https://geosephlien.github.io/register/">Get SDK</a>
+      <a id="demo-landing-link" href="https://geosephlien.github.io/landing/">Back to Landing</a>
     </div>
   </main>
+  <script>
+    (function () {
+      const urlParams = new URLSearchParams(window.location.search);
+      const runtimeConfig = window.__AC2_RUNTIME__ && typeof window.__AC2_RUNTIME__ === 'object'
+        ? window.__AC2_RUNTIME__
+        : {};
+
+      function readRuntimeValue(name) {
+        const queryValue = urlParams.get(name);
+        if (typeof queryValue === 'string' && queryValue.trim()) {
+          return queryValue.trim();
+        }
+
+        const configValue = runtimeConfig[name];
+        if (typeof configValue === 'string' && configValue.trim()) {
+          return configValue.trim();
+        }
+
+        return '';
+      }
+
+      function normalizeUrl(value, fallback) {
+        try {
+          return new URL(String(value || '')).toString();
+        } catch {
+          return fallback;
+        }
+      }
+
+      const registerLink = document.getElementById('demo-register-link');
+      const landingLink = document.getElementById('demo-landing-link');
+
+      if (registerLink) {
+        registerLink.href = normalizeUrl(readRuntimeValue('registerUrl'), registerLink.href);
+      }
+
+      if (landingLink) {
+        landingLink.href = normalizeUrl(readRuntimeValue('landingUrl'), landingLink.href);
+      }
+    })();
+  </script>
 </body>
 </html>
