@@ -124,7 +124,6 @@
 
     <div class="link-row">
       <a href="./README.md">View README</a>
-      <a id="demo-register-link" href="https://geosephlien.github.io/register/">Get SDK</a>
       <a id="demo-landing-link" href="https://geosephlien.github.io/landing/">Back to Landing</a>
     </div>
   </main>
@@ -157,12 +156,7 @@
         }
       }
 
-      const registerLink = document.getElementById('demo-register-link');
       const landingLink = document.getElementById('demo-landing-link');
-
-      if (registerLink) {
-        registerLink.href = normalizeUrl(readRuntimeValue('registerUrl'), registerLink.href);
-      }
 
       if (landingLink) {
         landingLink.href = normalizeUrl(readRuntimeValue('landingUrl'), landingLink.href);
